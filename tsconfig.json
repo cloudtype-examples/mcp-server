@@ -1,0 +1,17 @@
+{
+  "compilerOptions": {
+    "lib": ["esnext", "dom"],
+    "types": ["node"],
+    "target": "esnext",
+    "module": "nodenext",
+    "moduleResolution": "nodenext",
+    "outDir": "./lib",
+    "emitDecoratorMetadata": true,
+    "experimentalDecorators": true,
+    "sourceMap": true,
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "declaration": true
+  },
+  "include": ["src/**/*"]
+}
