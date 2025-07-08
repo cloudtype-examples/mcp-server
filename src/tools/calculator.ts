@@ -1,34 +1,15 @@
 import { CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { z } from 'zod';
 
 export const calculator = {
   name: 'calculator',
   description: 'Perform basic mathematical calculations',
-  inputSchema: {
-    type: 'object',
-    properties: {
-      operation: {
-        type: 'string',
-        enum: ['add', 'subtract', 'multiply', 'divide'],
-        description: 'The mathematical operation to perform'
-      },
-      a: {
-        type: 'number',
-        description: 'First number'
-      },
-      b: {
-        type: 'number',
-        description: 'Second number'
-      }
-    },
-    required: ['operation', 'a', 'b']
+  args: {
+    operation: z.enum(['add', 'subtract', 'multiply', 'divide']).describe('The mathematical operation to perform'),
+    a: z.number().describe('First number'),
+    b: z.number().describe('Second number')
   },
-  toolCall: async (args: any): Promise<CallToolResult> => {
-    const { operation, a, b } = args as {
-      operation: 'add' | 'subtract' | 'multiply' | 'divide';
-      a: number;
-      b: number;
-    };
-
+  handle: async ({ operation, a, b }): Promise<CallToolResult> => {
     let result: number;
     let operationSymbol: string;
 

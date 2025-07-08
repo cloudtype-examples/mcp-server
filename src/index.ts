@@ -9,7 +9,8 @@ const mcp = new MCPServer({
   token: TOKEN
 });
 
-mcp.addTool(calculator);
+mcp.server.tool(calculator.name, calculator.description, calculator.args, calculator.handle);
+
 
 const app = express()
   .use(express.json())

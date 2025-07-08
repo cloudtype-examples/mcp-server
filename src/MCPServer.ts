@@ -1,6 +1,7 @@
 import { Server } from '@modelcontextprotocol/sdk/server/index.js';
+import { McpServer } from '@modelcontextprotocol/sdk/server/mcp.js';
 import { StreamableHTTPServerTransport } from '@modelcontextprotocol/sdk/server/streamableHttp.js';
-import { CallToolRequestSchema, ListToolsRequestSchema, JSONRPCError, isInitializeRequest, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
+import { JSONRPCError, isInitializeRequest, CallToolResult } from '@modelcontextprotocol/sdk/types.js';
 import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 
@@ -13,91 +14,60 @@ export class MCPServerOptions {
 export class MCPTool {
   name: string;
   description: string;
-  inputSchema: any;
-  async toolCall(args: any): Promise<CallToolResult> {
+  args?: any;
+  inputSchema?: any;
+  outputSchema?: any;
+  annotations?: any;
+  async handle(args: any): Promise<CallToolResult> {
     throw new Error(`not implemented`);
   }
 }
 
 export class MCPServer {
   private options: MCPServerOptions;
-  private server: Server;
+  private _server: McpServer;
   private transports: { [sessionId: string]: StreamableHTTPServerTransport };
-  private tools: { [key: string]: MCPTool };
 
   constructor(options?: MCPServerOptions) {
     if (!options?.token) throw new Error(`options.token is required`);
 
     this.options = options;
     this.transports = {};
-    this.tools = {};
-    this.server = new Server(
+    this._server = new McpServer(
       {
         name: options.name || 'mcp-server',
         version: options.version || '0.0.0'
       },
       {
-        capabilities: {
-          tools: {},
-          logging: {}
-        }
+        instructions: 'Use this server to calculate numbers.'
       }
     );
-
-    // tools/list
-    this.server.setRequestHandler(ListToolsRequestSchema, async () => {
-      const tools = Object.keys(this.tools).map((name) => {
-        const tool = this.tools[name];
-
-        return {
-          name,
-          description: tool.description,
-          inputSchema: tool.inputSchema
-        };
-      });
-
-      console.log(
-        'tools/list',
-        tools.slice().map((tool) => tool.name)
-      );
-
-      return {
-        tools
-      };
-    });
-
-    // tools/call
-    this.server.setRequestHandler(CallToolRequestSchema, async (request, extra) => {
-      const toolName = request.params.name;
-      const args = request.params.arguments;
-
-      if (!toolName) throw new Error(`tool name is required`);
-      if (!args) throw new Error(`tool call "${toolName}" args is required`);
-
-      const tool = this.tools[toolName];
-      if (!tool) throw new Error(`tool "${toolName}" not found`);
-
-      return await tool.toolCall(args);
-    });
   }
 
-  public getServer(): Server {
-    return this.server;
+  public get server(): McpServer {
+    return this._server;
   }
 
   public addTool(tool: MCPTool): void {
     if (!tool) throw new Error(`argument tool is required`);
     if (!tool.name) throw new Error(`argument tool.name is required`);
     if (!tool.description) throw new Error(`argument tool.description is required`);
-    if (!tool.inputSchema) throw new Error(`argument tool.inputSchema is required`);
-    if (!tool.toolCall) throw new Error(`argument tool.toolCall is required`);
+    if (!tool.handle) throw new Error(`argument tool.handle is required`);
 
-    this.tools[tool.name] = {
-      name: tool.name,
-      description: tool.description,
-      inputSchema: tool.inputSchema,
-      toolCall: tool.toolCall
-    };
+    if (tool.args) {
+      this.server.tool(tool.name, tool.description, tool.args, tool.handle);
+    } else {
+      this.server.registerTool(
+        tool.name,
+        {
+          description: tool.description,
+          inputSchema: tool.inputSchema,
+          outputSchema: tool.outputSchema,
+          annotations: tool.annotations
+        },
+        tool.handle
+      );
+    }
   }
 
   public async handleGet(req: Request, res: Response): Promise<void> {
@@ -107,7 +77,7 @@ export class MCPServer {
       const authorization = req.headers['authorization'] as string;
       const token = authorization?.split(' ')[1] || req.query.token;
       if (token !== this.options.token) {
-        console.error('Invalid token', token);
+        console.error('Invalid token', token, this.options.token);
         res.status(401).json(this.createError('Unauthorized'));
         return;
       }
@@ -175,6 +145,7 @@ export class MCPServer {
           this.transports[transport.sessionId] = transport;
         }
       } else {
+        console.log(`Bad Request: no session ${sessionid}`);
         res.status(400).json(this.createError('Bad Request'));
       }
     } catch (err) {
@@ -189,8 +160,6 @@ export class MCPServer {
       res.status(400).send('Invalid or missing session ID');
       return;
     }
-
-    console.log(`Received session termination request for session ${sessionId}`);
 
     try {
       const transport = transports[sessionId];
