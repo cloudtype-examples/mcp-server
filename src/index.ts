@@ -1,18 +1,30 @@
+import 'dotenv/config';
 import express, { Request, Response } from 'express';
+import cors from 'cors';
 import { MCPServer } from './MCPServer.js';
-import { calculator } from './tools/index.js';
+import { calculator, userStatistics, userList } from './tools/index.js';
 
 const PORT = +process.env.PORT || 3000;
-const TOKEN = process.env.TOKEN || 'dev-token';
+const TOKEN = process.env.TOKEN;
+const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN;
 
 const mcp = new MCPServer({
+  name: 'my-mcp-server',
   token: TOKEN
 });
 
 mcp.server.tool(calculator.name, calculator.description, calculator.args, calculator.handle);
-
+mcp.server.tool(userStatistics.name, userStatistics.description, userStatistics.args, userStatistics.handle);
+mcp.server.tool(userList.name, userList.description, userList.args, userList.handle);
 
 const app = express()
+  .use(
+    cors({
+      origin: ALLOWED_ORIGIN || '*',
+      methods: ['GET', 'POST', 'OPTIONS', 'DELETE'],
+      allowedHeaders: ['Content-Type', 'Authorization', 'MCP-Session-Id', 'mcp-session-id']
+    })
+  )
   .use(express.json())
   .get('/mcp', async (req: Request, res: Response) => {
     await mcp.handleGet(req, res);

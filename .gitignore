@@ -38,3 +38,4 @@ buildpath.js
 /dist
 /lib
 /ui/dist
+.env*

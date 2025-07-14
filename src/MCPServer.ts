@@ -29,13 +29,14 @@ export class MCPServer {
   private transports: { [sessionId: string]: StreamableHTTPServerTransport };
 
   constructor(options?: MCPServerOptions) {
+    if (!options?.name) throw new Error(`options.name is required`);
     if (!options?.token) throw new Error(`options.token is required`);
 
     this.options = options;
     this.transports = {};
     this._server = new McpServer(
       {
-        name: options.name || 'mcp-server',
+        name: options.name,
         version: options.version || '0.0.0'
       },
       {
