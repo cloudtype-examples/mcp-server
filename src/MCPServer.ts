@@ -30,7 +30,6 @@ export class MCPServer {
 
   constructor(options?: MCPServerOptions) {
     if (!options?.name) throw new Error(`options.name is required`);
-    if (!options?.token) throw new Error(`options.token is required`);
 
     this.options = options;
     this.transports = {};
@@ -77,8 +76,15 @@ export class MCPServer {
     try {
       const authorization = req.headers['authorization'] as string;
       const token = authorization?.split(' ')[1] || req.query.token;
+
+      if (!this.options.token) {
+        console.error('WARN: Environment variable TOKEN is required');
+        res.status(401).json(this.createError('Unauthorized'));
+        return;
+      }
+
       if (token !== this.options.token) {
-        console.error('Invalid token', token, this.options.token);
+        console.error('Invalid token', token);
         res.status(401).json(this.createError('Unauthorized'));
         return;
       }
@@ -106,6 +112,13 @@ export class MCPServer {
     try {
       const authorization = req.headers['authorization'] as string;
       const token = authorization?.split(' ')[1] || req.query.token;
+
+      if (!this.options.token) {
+        console.error('WARN: Environment variable TOKEN is required');
+        res.status(401).json(this.createError('Unauthorized'));
+        return;
+      }
+
       if (token !== this.options.token) {
         console.error('Invalid token', token);
         res.status(401).json(this.createError('Unauthorized'));

@@ -8,6 +8,10 @@ const PORT = +process.env.PORT || 3000;
 const TOKEN = process.env.TOKEN;
 const ALLOWED_ORIGIN = process.env.ALLOWED_ORIGIN;
 
+if (!TOKEN) {
+  console.warn(`WARN: Environment variable 'TOKEN' is required`);
+}
+
 const mcp = new MCPServer({
   name: 'my-mcp-server',
   token: TOKEN
