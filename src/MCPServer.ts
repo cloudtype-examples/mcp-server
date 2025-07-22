@@ -6,9 +6,10 @@ import { randomUUID } from 'crypto';
 import { Request, Response } from 'express';
 
 export class MCPServerOptions {
-  name?: string;
-  version?: string;
+  name: string;
   token: string;
+  version?: string;
+  instructions?: string;
 }
 
 export class MCPTool {
@@ -38,8 +39,8 @@ export class MCPServer {
         name: options.name,
         version: options.version || '0.0.0'
       },
-      {
-        instructions: 'Use this server to calculate numbers.'
+      options.instructions && {
+        instructions: options.instructions
       }
     );
   }

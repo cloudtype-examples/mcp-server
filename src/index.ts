@@ -14,7 +14,9 @@ if (!TOKEN) {
 
 const mcp = new MCPServer({
   name: 'my-mcp-server',
-  token: TOKEN
+  version: '0.0.0',
+  token: TOKEN,
+  instructions: '사용자 지표 통계와 사용자 목록을 조회할 수 있는 도구를 제공합니다.'
 });
 
 mcp.server.tool(calculator.name, calculator.description, calculator.args, calculator.handle);
